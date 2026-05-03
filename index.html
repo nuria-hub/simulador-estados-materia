@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorio Virtual - Estados de la Materia</title>
+
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        background:#eef4ff;
+        text-align:center;
+        margin:0;
+        padding:20px;
+    }
+
+    h1{
+        color:#1e40af;
+    }
+
+    .container{
+        display:flex;
+        justify-content:center;
+        gap:25px;
+        flex-wrap:wrap;
+    }
+
+    #simulator{
+        width:450px;
+        height:420px;
+        border:4px solid #333;
+        background:white;
+        position:relative;
+        overflow:hidden;
+        border-radius:15px;
+    }
+
+    .particle{
+        width:14px;
+        height:14px;
+        background:#2563eb;
+        border-radius:50%;
+        position:absolute;
+    }
+
+    .panel{
+        width:340px;
+        background:white;
+        padding:20px;
+        border-radius:15px;
+        box-shadow:0 5px 15px rgba(0,0,0,0.15);
+        text-align:left;
+    }
+
+    button{
+        padding:10px 18px;
+        margin:5px;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+        font-size:15px;
+        color:white;
+    }
+
+    .heat{ background:#dc2626; }
+    .cool{ background:#0284c7; }
+
+    .heat:hover{ background:#991b1b; }
+    .cool:hover{ background:#0369a1; }
+
+    .temp{
+        font-size:22px;
+        font-weight:bold;
+        color:#b91c1c;
+    }
+
+    .question-box{
+        margin-top:20px;
+        padding:15px;
+        background:#f8fafc;
+        border-radius:10px;
+    }
+
+    select{
+        padding:8px;
+        margin-top:8px;
+        width:100%;
+    }
+
+    .result{
+        margin-top:10px;
+        font-weight:bold;
+    }
+</style>
+</head>
+<body>
+
+<h1>Laboratorio Virtual: Cambios de Estado</h1>
+<p>Observa cómo cambian las partículas según la temperatura.</p>
+
+<div class="container">
+
+    <div id="simulator"></div>
+
+    <div class="panel">
+        <h3>Control de temperatura</h3>
+        <button class="heat" onclick="changeTemp(10)">Calentar 🔥</button>
+        <button class="cool" onclick="changeTemp(-10)">Enfriar ❄️</button>
+
+        <p class="temp"><span id="temp">20</span> °C</p>
+
+        <p><strong>Estado:</strong> <span id="state">Sólido</span></p>
+        <p><strong>Cambio observado:</strong> <span id="change">Ninguno</span></p>
+        <p><strong>Movimiento:</strong> <span id="movement">Muy lento</span></p>
+        <p><strong>Cohesión:</strong> <span id="cohesion">Muy fuerte</span></p>
+
+        <div class="question-box">
+            <h4>Pregunta interactiva</h4>
+            <p>Si aumentamos mucho la temperatura, ¿qué ocurre?</p>
+
+            <select id="answer">
+                <option value="">Selecciona una opción</option>
+                <option value="1">Las partículas se mueven más rápido</option>
+                <option value="2">Las partículas se detienen</option>
+                <option value="3">El volumen desaparece</option>
+            </select>
+
+            <button onclick="checkAnswer()" style="background:#16a34a;">Responder</button>
+            <p class="result" id="result"></p>
+        </div>
+    </div>
+</div>
+
+<script>
+const simulator = document.getElementById("simulator");
+
+let particles = [];
+let temperature = 20;
+let animation;
+
+function createParticles(){
+    simulator.innerHTML="";
+    particles=[];
+
+    for(let i=0;i<35;i++){
+        const p=document.createElement("div");
+        p.className="particle";
+        simulator.appendChild(p);
+
+        particles.push({
+            el:p,
+            x:100+Math.random()*200,
+            y:100+Math.random()*200,
+            vx:0,
+            vy:0
+        });
+    }
+}
+
+function changeTemp(value){
+    temperature += value;
+
+    if(temperature < 0) temperature = 0;
+    if(temperature > 100) temperature = 100;
+
+    document.getElementById("temp").textContent = temperature;
+    updateSimulation();
+}
+
+function updateSimulation(){
+    let state="";
+    let speed=1;
+    let change="Ninguno";
+
+    if(temperature <= 30){
+        state="Sólido";
+        speed=0.3;
+        document.getElementById("movement").textContent="Muy lento";
+        document.getElementById("cohesion").textContent="Muy fuerte";
+
+        if(temperature === 30) change="Solidificación";
+    }
+
+    else if(temperature > 30 && temperature <= 70){
+        state="Líquido";
+        speed=1.8;
+        document.getElementById("movement").textContent="Moderado";
+        document.getElementById("cohesion").textContent="Intermedia";
+
+        if(temperature === 40) change="Fusión";
+        if(temperature === 70) change="Condensación";
+    }
+
+    else{
+        state="Gaseoso";
+        speed=4;
+        document.getElementById("movement").textContent="Muy rápido";
+        document.getElementById("cohesion").textContent="Muy débil";
+
+        if(temperature === 80) change="Evaporación";
+    }
+
+    document.getElementById("state").textContent=state;
+    document.getElementById("change").textContent=change;
+
+    particles.forEach((p,i)=>{
+
+        if(state==="Sólido"){
+            let row=Math.floor(i/6);
+            let col=i%6;
+            p.x=130+col*25;
+            p.y=120+row*25;
+            p.vx=(Math.random()-0.5)*speed;
+            p.vy=(Math.random()-0.5)*speed;
+        }else{
+            p.vx=(Math.random()-0.5)*speed*2;
+            p.vy=(Math.random()-0.5)*speed*2;
+        }
+    });
+
+    animate(state);
+}
+
+function animate(state){
+    cancelAnimationFrame(animation);
+
+    function move(){
+        particles.forEach(p=>{
+
+            if(state!=="Sólido"){
+                p.x += p.vx;
+                p.y += p.vy;
+
+                if(p.x<0 || p.x>435) p.vx*=-1;
+                if(p.y<0 || p.y>405) p.vy*=-1;
+            }else{
+                p.x += p.vx;
+                p.y += p.vy;
+            }
+
+            p.el.style.left=p.x+"px";
+            p.el.style.top=p.y+"px";
+        });
+
+        animation=requestAnimationFrame(move);
+    }
+    move();
+}
+
+function checkAnswer(){
+    const answer=document.getElementById("answer").value;
+    const result=document.getElementById("result");
+
+    if(answer==="1"){
+        result.textContent="✅ Correcto. Mayor temperatura = mayor energía cinética.";
+        result.style.color="green";
+    }else{
+        result.textContent="❌ Incorrecto. Intenta nuevamente.";
+        result.style.color="red";
+    }
+}
+
+createParticles();
+updateSimulation();
+</script>
+
+</body>
+</html>
